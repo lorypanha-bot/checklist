@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Video Complete</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0c0c0e;
+      --surface: #141416;
+      --surface2: #1a1a1d;
+      --border: #252528;
+      --border2: #2e2e33;
+      --accent: #e8ff47;
+      --accent2: #ff6b35;
+      --text: #e8e8e0;
+      --muted: #52525a;
+      --muted2: #3a3a40;
+      --done-bg: #1a1a10;
+      --done-border: #2e2e18;
+    }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 999; opacity: 0.7;
+    }
+    body::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent2));
+      z-index: 1000;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      height: 100vh; overflow: hidden;
+    }
+    .sidebar-head {
+      padding: 28px 20px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .app-tag {
+      font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 6px;
+    }
+    .app-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px; letter-spacing: 0.04em; color: var(--text); line-height: 1;
+    }
+    .app-title span { color: var(--accent); }
+    .new-project-wrap {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; gap: 8px;
+    }
+    .new-project-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; padding: 7px 10px; outline: none;
+      transition: border-color 0.2s;
+    }
+    .new-project-input::placeholder { color: var(--muted); }
+    .new-project-input:focus { border-color: var(--accent2); }
+    .new-project-btn {
+      width: 32px; height: 32px;
+      background: var(--accent); border: none; cursor: pointer;
+      font-size: 18px; color: #0c0c0e;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; flex-shrink: 0; transition: background 0.2s;
+    }
+    .new-project-btn:hover { background: var(--accent2); color: #fff; }
+    .project-list {
+      flex: 1; overflow-y: auto; padding: 8px 0;
+    }
+    .project-list::-webkit-scrollbar { width: 3px; }
+    .project-list::-webkit-scrollbar-thumb { background: var(--border2); }
+    .sidebar-empty {
+      padding: 20px 16px; font-size: 10px; color: var(--muted);
+      font-style: italic; text-align: center; line-height: 1.8;
+    }
+    .project-item {
+      display: flex; align-items: center;
+      padding: 10px 14px; cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease; gap: 10px;
+    }
+    .project-item:hover { background: var(--surface2); }
+    .project-item.active { border-left-color: var(--accent); background: var(--surface2); }
+    .project-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted2); flex-shrink: 0; transition: all 0.2s;
+    }
+    .project-item.active .project-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .project-item.done .project-dot { background: var(--accent); }
+    .project-info { flex: 1; min-width: 0; }
+    .project-name {
+      font-size: 12px; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
+    }
+    .project-item.active .project-name { color: var(--accent); }
+    .project-progress-text { font-size: 9px; color: var(--muted); margin-top: 2px; }
+    .project-mini-bar {
+      height: 2px; background: var(--border2); margin-top: 4px; overflow: hidden;
+    }
+    .project-mini-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+    .project-delete {
+      opacity: 0; background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 16px; padding: 2px 4px; flex-shrink: 0;
+      transition: all 0.15s; line-height: 1;
+    }
+    .project-item:hover .project-delete { opacity: 1; }
+    .project-delete:hover { color: var(--accent2); }
+
+    /* MAIN */
+    .main {
+      flex: 1; overflow-y: auto; height: 100vh; padding: 40px 40px 80px;
+    }
+    .main::-webkit-scrollbar { width: 3px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border2); }
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; text-align: center; gap: 12px;
+      animation: fadeIn 0.5s ease forwards;
+    }
+    .empty-state-icon { font-size: 48px; opacity: 0.25; }
+    .empty-state-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--muted); letter-spacing: 0.05em; }
+    .empty-state-sub { font-size: 11px; color: var(--muted); font-style: italic; }
+    .checklist-wrap { max-width: 620px; }
+    .project-header { margin-bottom: 32px; animation: fadeUp 0.4s ease forwards; }
+    .project-header-tag { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent2); margin-bottom: 8px; }
+    .project-header-name { font-family: 'Bebas Neue', sans-serif; font-size: clamp(36px, 6vw, 64px); line-height: 0.95; letter-spacing: 0.02em; color: var(--text); word-break: break-word; }
+    .progress-wrap { margin-bottom: 32px; animation: fadeUp 0.4s ease 0.05s both; }
+    .progress-meta { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .progress-label { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+    .progress-count { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--accent); line-height: 1; }
+    .progress-bar-bg { height: 2px; background: var(--border2); overflow: hidden; }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent));
+      transition: width 0.45s cubic-bezier(0.4,0,0.2,1); position: relative;
+    }
+    .progress-bar-fill::after {
+      content: ''; position: absolute; right: -1px; top: -2px;
+      width: 5px; height: 5px; background: var(--accent); border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .section { margin-bottom: 26px; animation: fadeUp 0.4s ease both; }
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .section-icon { font-size: 13px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; background: var(--surface2); border: 1px solid var(--border2); flex-shrink: 0; }
+    .section-title { font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); }
+    .section-line { flex: 1; height: 1px; background: var(--border); }
+    .item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border); border-left: 2px solid transparent;
+      margin-bottom: 5px; cursor: pointer;
+      transition: all 0.18s ease; background: var(--surface); user-select: none;
+    }
+    .item:hover { border-color: var(--muted2); border-left-color: var(--accent2); background: var(--surface2); }
+    .item.checked { background: var(--done-bg); border-color: var(--done-border); border-left-color: var(--accent); }
+    .checkbox {
+      width: 16px; height: 16px; border: 1px solid var(--muted2); flex-shrink: 0;
+      margin-top: 1px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s ease;
+    }
+    .item.checked .checkbox { background: var(--accent); border-color: var(--accent); }
+    .checkmark { opacity: 0; transform: scale(0.3); transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); font-size: 9px; color: #0c0c0e; font-weight: bold; }
+    .item.checked .checkmark { opacity: 1; transform: scale(1); }
+    .item-text { flex: 1; }
+    .item-label { font-size: 12px; color: var(--text); line-height: 1.4; transition: color 0.18s; }
+    .item.checked .item-label { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--accent); }
+    .item-desc { font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.6; font-style: italic; }
+    .checklist-footer { margin-top: 32px; display: flex; justify-content: space-between; align-items: center; animation: fadeUp 0.4s ease 0.5s both; }
+    .status-msg { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; transition: color 0.3s; }
+    .status-msg.complete { color: var(--accent); }
+    .reset-btn {
+      font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--muted); background: none;
+      border: 1px solid var(--border2); padding: 7px 14px; cursor: pointer; transition: all 0.18s;
+    }
+    .reset-btn:hover { color: var(--accent2); border-color: var(--accent2); }
+
+    /* Flash */
+    .flash { position: fixed; inset: 0; background: var(--accent); z-index: 998; opacity: 0; pointer-events: none; }
+    .flash.show { animation: flashAnim 0.55s ease forwards; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75); z-index: 500;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border2); padding: 28px; max-width: 320px; width: 90%; }
+    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--accent2); margin-bottom: 8px; }
+    .modal-body { font-size: 11px; color: var(--muted); line-height: 1.7; margin-bottom: 20px; }
+    .modal-body strong { color: var(--text); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-cancel { font-family: 'DM Mono', monospace; font-size: 10px; padding: 8px 14px; background: none; border: 1px solid var(--border2); color: var(--muted); cursor: pointer; transition: all 0.15s; }
+    .modal-cancel:hover { border-color: var(--muted); color: var(--text); }
+    .modal-confirm { font-family: 'DM Mono', monospace; font-size: 10px; padding: 8px 14px; background: var(--accent2); border: none; color: #fff; cursor: pointer; transition: opacity 0.15s; }
+    .modal-confirm:hover { opacity: 0.85; }
+
+    @keyframes flashAnim { 0%{opacity:0} 25%{opacity:0.1} 100%{opacity:0} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  </style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">Delete Project</div>
+    <div class="modal-body">Delete <strong id="deleteModalName"></strong>? This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-head">
+    <div class="app-tag">Editor's Tool</div>
+    <div class="app-title">VIDEO<br><span>COMPLETE</span></div>
+  </div>
+  <div class="new-project-wrap">
+    <input class="new-project-input" id="newProjectInput" type="text" placeholder="New project name..." maxlength="40"
+      onkeydown="if(event.key==='Enter') addProject()"/>
+    <button class="new-project-btn" onclick="addProject()">+</button>
+  </div>
+  <div class="project-list" id="projectList">
+    <div class="sidebar-empty" id="emptyListMsg">No projects yet.<br>Name your first video above.</div>
+  </div>
+</aside>
+
+<main class="main" id="main">
+  <div class="empty-state" id="emptyState">
+    <div class="empty-state-icon">🎬</div>
+    <div class="empty-state-title">No Project Selected</div>
+    <div class="empty-state-sub">Create or select a project<br>from the sidebar to begin.</div>
+  </div>
+  <div class="checklist-wrap" id="checklistWrap" style="display:none">
+    <div class="project-header" id="projectHeader">
+      <div class="project-header-tag">Now Checking</div>
+      <div class="project-header-name" id="projectHeaderName"></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="progress-label">Completion</span>
+        <span class="progress-count" id="countDisplay">0 / 0</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    </div>
+    <div id="checklist"></div>
+    <div class="checklist-footer">
+      <span class="status-msg" id="statusMsg">— keep going</span>
+      <button class="reset-btn" onclick="resetCurrent()">↺ Reset</button>
+    </div>
+  </div>
+</main>
+
+<script>
+const SECTIONS = [
+  { icon:"🎬", title:"Narrative Arc", items:[
+    { label:"Strong opening hook", desc:"Viewer is grabbed within the first 3 seconds" },
+    { label:"Clear middle structure", desc:"Content delivers on the promise of the opening" },
+    { label:"Intentional ending — not just a stop", desc:"There is a deliberate closing moment, not a lazy fade" },
+    { label:"Thematic callback to the beginning", desc:"An image, phrase, or sound from the start is echoed at the end" },
+  ]},
+  { icon:"🎵", title:"Music", items:[
+    { label:"Music sets the right emotional tone from frame one", desc:"Genre, tempo, and feel match the video's purpose" },
+    { label:"Music resolves with the visuals", desc:"The track ends or fades at the right moment — not abruptly" },
+    { label:"Cuts align with the music's natural phrases", desc:"Edits feel rhythmic, not fighting the beat" },
+    { label:"Volume balanced — not overpowering dialogue or SFX", desc:"Music sits in the mix, not on top of it" },
+  ]},
+  { icon:"🔊", title:"Sound Effects", items:[
+    { label:"Key visuals have corresponding sound hits", desc:"Motion graphics, cuts, and impacts all have audio weight" },
+    { label:"Ambient / room tone fills the gaps", desc:"Silence between cuts doesn't feel hollow or dead" },
+    { label:"SFX are mixed at the right level", desc:"They punctuate without distracting" },
+    { label:"Audio fades are smooth — no abrupt cuts", desc:"All transitions have clean audio tails" },
+  ]},
+  { icon:"✨", title:"Motion Graphics", items:[
+    { label:"Animation style is consistent throughout", desc:"Every graphic moves with the same language and easing" },
+    { label:"Motion graphics timed to music or SFX hits", desc:"They feel part of the world, not pasted on" },
+    { label:"Outro / end card signals closure formally", desc:"There's a visual 'THE END' equivalent" },
+    { label:"Text is readable — size, duration, and contrast", desc:"Nothing flashes too fast or sits too long" },
+  ]},
+  { icon:"⚡", title:"Speed Ramps", items:[
+    { label:"Ramps used at emotionally intentional moments", desc:"Slow = this matters. Fast = energy. Not random." },
+    { label:"Ramp curve is smooth — no mechanical feel", desc:"Acceleration and deceleration feel organic" },
+    { label:"Speed changes synced to the music", desc:"Peak of the ramp lands on a beat or musical hit" },
+    { label:"Ramps don't overpower the story", desc:"Used sparingly — each one earns its place" },
+  ]},
+  { icon:"🎞", title:"Overall Feel", items:[
+    { label:"Emotional loop opens and closes", desc:"Viewer ends in a different state than they started" },
+    { label:"Pacing has breathing room", desc:"Key moments are given space to land before moving on" },
+    { label:"Visual style consistent end to end", desc:"Color grade, aspect ratio, and aesthetics feel unified" },
+    { label:"Watched it back in full — start to finish", desc:"Fresh eyes, no skipping. You felt it as a whole." },
+  ]},
+];
+
+const TOTAL = SECTIONS.reduce((a, s) => a + s.items.length, 0);
+
+// ── Storage ──
+function load() { try { return JSON.parse(localStorage.getItem('vc_projects')) || {}; } catch { return {}; } }
+function save(d) { localStorage.setItem('vc_projects', JSON.stringify(d)); }
+function loadOrder() { try { return JSON.parse(localStorage.getItem('vc_order')) || []; } catch { return []; } }
+function saveOrder(o) { localStorage.setItem('vc_order', JSON.stringify(o)); }
+function loadActive() { return localStorage.getItem('vc_active') || null; }
+function saveActive(id) { localStorage.setItem('vc_active', id || ''); }
+
+let projects = load();
+let order    = loadOrder().filter(id => projects[id]);
+let activeId = loadActive();
+if (activeId && !projects[activeId]) activeId = null;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function key(si, ii) { return `s${si}_i${ii}`; }
+function newChecks() {
+  const c = {};
+  SECTIONS.forEach((s,si) => s.items.forEach((_,ii) => c[key(si,ii)] = false));
+  return c;
+}
+function progress(id) {
+  const done = Object.values(projects[id].checks).filter(Boolean).length;
+  return { done, total: TOTAL, pct: Math.round(done / TOTAL * 100) };
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Sidebar ──
+function renderSidebar() {
+  const list = document.getElementById('projectList');
+  const emptyMsg = document.getElementById('emptyListMsg');
+  [...list.querySelectorAll('.project-item')].forEach(el => el.remove());
+  if (!order.length) { emptyMsg.style.display = 'block'; return; }
+  emptyMsg.style.display = 'none';
+  order.forEach(id => {
+    const p = projects[id];
+    const { done, pct } = progress(id);
+    const el = document.createElement('div');
+    el.className = 'project-item' + (id === activeId ? ' active' : '') + (done === TOTAL ? ' done' : '');
+    el.dataset.id = id;
+    el.innerHTML = `
+      <div class="project-dot"></div>
+      <div class="project-info">
+        <div class="project-name">${esc(p.name)}</div>
+        <div class="project-progress-text">${done}/${TOTAL} · ${pct}%</div>
+        <div class="project-mini-bar"><div class="project-mini-fill" style="width:${pct}%"></div></div>
+      </div>
+      <button class="project-delete" data-id="${id}" title="Delete">×</button>
+    `;
+    el.addEventListener('click', e => { if (!e.target.classList.contains('project-delete')) selectProject(id); });
+    el.querySelector('.project-delete').addEventListener('click', e => { e.stopPropagation(); openDeleteModal(id); });
+    list.appendChild(el);
+  });
+}
+
+// ── Main ──
+function renderMain() {
+  const empty = document.getElementById('emptyState');
+  const wrap  = document.getElementById('checklistWrap');
+  if (!activeId || !projects[activeId]) {
+    empty.style.display = 'flex'; wrap.style.display = 'none'; return;
+  }
+  empty.style.display = 'none'; wrap.style.display = 'block';
+
+  document.getElementById('projectHeaderName').textContent = projects[activeId].name;
+
+  // re-trigger header animation
+  const hdr = document.getElementById('projectHeader');
+  hdr.style.animation = 'none'; void hdr.offsetWidth; hdr.style.animation = '';
+
+  const container = document.getElementById('checklist');
+  container.innerHTML = '';
+  let delay = 0.08;
+  SECTIONS.forEach((section, si) => {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    sec.style.animationDelay = `${delay}s`;
+    delay += 0.045;
+    sec.innerHTML = `<div class="section-header"><div class="section-icon">${section.icon}</div><span class="section-title">${section.title}</span><div class="section-line"></div></div>`;
+    section.items.forEach((item, ii) => {
+      const k = key(si, ii);
+      const checked = projects[activeId].checks[k] || false;
+      const el = document.createElement('div');
+      el.className = 'item' + (checked ? ' checked' : '');
+      el.innerHTML = `<div class="checkbox"><span class="checkmark">✓</span></div><div class="item-text"><div class="item-label">${esc(item.label)}</div><div class="item-desc">${esc(item.desc)}</div></div>`;
+      el.addEventListener('click', () => toggleItem(k, el));
+      sec.appendChild(el);
+    });
+    container.appendChild(sec);
+  });
+  updateProgress();
+}
+
+function toggleItem(k, el) {
+  if (!activeId) return;
+  projects[activeId].checks[k] = !projects[activeId].checks[k];
+  el.classList.toggle('checked', projects[activeId].checks[k]);
+  save(projects);
+  updateProgress();
+  renderSidebar();
+}
+
+function updateProgress() {
+  if (!activeId) return;
+  const { done, pct } = progress(activeId);
+  document.getElementById('countDisplay').textContent = `${done} / ${TOTAL}`;
+  document.getElementById('progressBar').style.width = `${pct}%`;
+  const msg = document.getElementById('statusMsg');
+  if (done === TOTAL) { msg.textContent = '✦ ready to export'; msg.classList.add('complete'); triggerFlash(); }
+  else if (pct >= 70) { msg.textContent = '— almost there'; msg.classList.remove('complete'); }
+  else { msg.textContent = '— keep going'; msg.classList.remove('complete'); }
+}
+
+function triggerFlash() {
+  const f = document.getElementById('flash');
+  f.classList.remove('show'); void f.offsetWidth; f.classList.add('show');
+}
+
+// ── Actions ──
+function addProject() {
+  const input = document.getElementById('newProjectInput');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  const id = uid();
+  projects[id] = { name, checks: newChecks() };
+  order.unshift(id);
+  save(projects); saveOrder(order);
+  input.value = '';
+  selectProject(id);
+}
+
+function selectProject(id) {
+  activeId = id; saveActive(id);
+  renderSidebar(); renderMain();
+  document.getElementById('main').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetCurrent() {
+  if (!activeId) return;
+  Object.keys(projects[activeId].checks).forEach(k => projects[activeId].checks[k] = false);
+  save(projects); renderMain(); renderSidebar();
+}
+
+let pendingDeleteId = null;
+function openDeleteModal(id) {
+  pendingDeleteId = id;
+  document.getElementById('deleteModalName').textContent = `"${projects[id].name}"`;
+  document.getElementById('deleteModal').classList.add('open');
+}
+function closeDeleteModal() { pendingDeleteId = null; document.getElementById('deleteModal').classList.remove('open'); }
+function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  delete projects[id];
+  order = order.filter(x => x !== id);
+  if (activeId === id) activeId = order[0] || null;
+  save(projects); saveOrder(order); saveActive(activeId);
+  closeDeleteModal(); renderSidebar(); renderMain();
+}
+document.getElementById('deleteModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
+
+renderSidebar();
+renderMain();
+</script>
+</body>
+</html>
